@@ -2,7 +2,6 @@ import ipaddress
 from openpyxl import load_workbook
 from openpyxl.styles import PatternFill
 from collections import defaultdict
-from pprint import pprint
 
 
 class Tools():
@@ -23,6 +22,7 @@ class Tools():
         self.prev_dict = self.xlsx_to_dict(self.previous_report, self.prp0_sheet)
 
         # current report and new report names
+        self.prp1_sheet = 'Pentest Report'
         self.current_report = f"{self.sheet_folder}{curr_rep}"
 
         # Legend
@@ -115,7 +115,7 @@ class Tools():
 
     def _color_cells(self, row, color):
         '''
-        return a PatternFill object that will be used to color cell
+        loop through all cells in a row and color them
         '''
         for cell in row:
             cell.fill = PatternFill(start_color = color, 
@@ -127,7 +127,7 @@ class Tools():
         read <self.crcsv> line by line and color accordingly
         '''
         workbook = load_workbook(self.current_report, data_only=True)
-        worksheet = workbook[self.prp0_sheet]
+        worksheet = workbook[self.prp1_sheet]
 
         for row in worksheet:
             ip, port = str(row[0].value), str(row[1].value)
@@ -143,4 +143,3 @@ class Tools():
             else:
                 self._color_cells(row, self.colors['blue'])
         workbook.save(self.current_report)
-
