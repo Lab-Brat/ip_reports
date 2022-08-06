@@ -28,6 +28,11 @@ class Tools():
         # Legend
         self.lg = f"{self.sheet_folder}{legend}"
 
+        # Colors
+        self.colors = {'green': 'FF00FF00', 'red': 'FFFF0000',
+                       'yellow': 'FFFFFF00', 'orange': 'FFFF6600',
+                       'blue': 'FF00FFFF', 'gray': 'FFC0C0C0'}
+
     def _read_txt(self, txt):
         '''
         read txt file line by line, output a list of lines
@@ -100,14 +105,22 @@ class Tools():
 
     def _ip_within_range(self, ip):
         '''
-        determine if an IP address belongs to any of the subnets
+        determine if an IP address belongs to a subnets
         '''
-        found = False
         for range in self.cf_ip_ranges:
-            ipdig = self.convert_to_digit(ip)
+            ipdig = self._ip_to_digit(ip)
             if range[0] <= ipdig <= range[1]:
                 return True
-        return found
+        return False
+
+    def _color_cells(self, row, color):
+        '''
+        return a PatternFill object that will be used to color cell
+        '''
+        for cell in row:
+            cell.fill = PatternFill(start_color = color, 
+                                    end_color = color,
+                                    fill_type = "solid")
 
     def color_xlsx(self):
         '''
@@ -119,12 +132,15 @@ class Tools():
         for row in worksheet:
             ip, port = str(row[0].value), str(row[1].value)
             record = self._is_present(ip, port)
-            if record:
-                for cell in row:
-                    cell.fill = PatternFill(start_color=f"{record[1]}", 
-                                            end_color=f"{record[1]}", 
-                                            fill_type = "solid")
+            if self._is_ip(ip) == False:
+                print('not IP')
+            elif self._ip_within_range(ip):
+                self._color_cells(row, self.colors['orange'])
+            elif ip not in self.ip_adrs:
+                self._color_cells(row, self.colors['gray'])
+            elif record:
+                self._color_cells(row, record[1])
+            else:
+                self._color_cells(row, self.colors['blue'])
         workbook.save(self.current_report)
 
-    def test(self):
-        print(self.prev_dict)
