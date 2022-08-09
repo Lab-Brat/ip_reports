@@ -3,7 +3,7 @@ from tools import Tools
 # necessary documents
 ip_adrs = 'ip_addresses.csv'
 prev_rep = "prp-0.xlsx"
-curr_rep = "prp-current.xlsx"
+curr_rep = "prp-1.xlsx"
 legend   = "legend.csv"
 
 # optional documets
