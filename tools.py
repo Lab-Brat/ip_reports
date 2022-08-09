@@ -11,18 +11,18 @@ class Tools():
         # infra ips
         self.ip_adrs = self._read_txt(f"{self.sheet_folder}{ip_adrs}")
 
-        # Cloudflare subnets
+        # Subnets
         self.cf = f"{self.sheet_folder}{clf}"
         self.cf_ip_read = self._read_txt(self.cf)
         self.cf_ip_ranges = [self.subnet_range(ip) for ip in self.cf_ip_read]
 
         # previous report
-        self.prp0_sheet = 'Pentest Report'
+        self.prp0_sheet = 'IP Report'
         self.previous_report = f"{self.sheet_folder}{prev_rep}"
         self.prev_dict = self.xlsx_to_dict(self.previous_report, self.prp0_sheet)
 
         # current report and new report names
-        self.prp1_sheet = 'Pentest Report'
+        self.prp1_sheet = 'IP Report'
         self.current_report = f"{self.sheet_folder}{curr_rep}"
 
         # Legend
