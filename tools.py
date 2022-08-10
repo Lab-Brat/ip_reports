@@ -72,7 +72,6 @@ class Reader:
         return '\n'.join(res)
 
 
-
 class Tools():
     def __init__(self, Reader):
         # Reader object
@@ -87,11 +86,8 @@ class Tools():
         '''
         convert IP address string to a unique integer
         '''
-        octet_ints = [int(i) for i in str(ip).split('.')]
-        ipdig = 0
-        for i, octet in enumerate(octet_ints):
-            ipdig += octet * (256 ** (3-i))
-        return ipdig
+        return sum([int(oct) * (256 ** (3-i)) 
+                    for i, oct in enumerate(str(ip).split('.'))])
 
     def subnet_range(self, subnet):
         '''
