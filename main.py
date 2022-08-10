@@ -1,4 +1,4 @@
-from tools import Tools
+from tools import Reader, Tools
 
 # necessary documents
 ip_adrs = 'ip_addresses.csv'
@@ -9,6 +9,5 @@ legend   = "legend.csv"
 # optional documets
 clf_ips = "subnets.txt"
 
-tt = Tools(ip_adrs, prev_rep, curr_rep, clf_ips, legend)
-tt.color_xlsx()
-# tt.test()
+rd = Reader(ip_adrs, prev_rep, curr_rep, clf_ips, legend)
+Tools(rd).color_xlsx()

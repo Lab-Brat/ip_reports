@@ -2,36 +2,24 @@ import ipaddress
 from openpyxl import load_workbook
 from openpyxl.styles import PatternFill
 from collections import defaultdict
+from dataclasses import dataclass, fields
 
+@dataclass
+class Reader:
+    ip_adrs: str
+    prev_rep: str
+    curr_rep: str
+    clf: str
+    legend: str
+    sheet_folder = '/opt/tables/'
 
-class Tools():
-    def __init__(self, ip_adrs, prev_rep, curr_rep, clf, legend):
-        self.sheet_folder = '/opt/tables/'
-
-        # infra ips
-        self.ip_adrs = self._read_txt(f"{self.sheet_folder}{ip_adrs}")
-
-        # Subnets
-        self.cf = f"{self.sheet_folder}{clf}"
-        self.cf_ip_read = self._read_txt(self.cf)
-        self.cf_ip_ranges = [self.subnet_range(ip) for ip in self.cf_ip_read]
-
-        # previous report
-        self.prp0_sheet = 'IP Report'
-        self.previous_report = f"{self.sheet_folder}{prev_rep}"
-        self.prev_dict = self.xlsx_to_dict(self.previous_report, self.prp0_sheet)
-
-        # current report and new report names
-        self.prp1_sheet = 'IP Report'
-        self.current_report = f"{self.sheet_folder}{curr_rep}"
-
-        # Legend
-        self.lg = f"{self.sheet_folder}{legend}"
-
-        # Colors
-        self.colors = {'green': 'FF00FF00', 'red': 'FFFF0000',
-                       'yellow': 'FFFFFF00', 'orange': 'FFFF6600',
-                       'blue': 'FF00FFFF', 'gray': 'FFC0C0C0'}
+    def __post_init__(self):
+        self.ip_adrs = self._read_txt(f"{self.sheet_folder}{self.ip_adrs}")
+        self.previous_report = f"{self.sheet_folder}{self.prev_rep}"
+        self.prev_rep = self._xlsx_to_dict(self.previous_report, 'Pentest Report')
+        self.curr_rep = self.current_report = f"{self.sheet_folder}{self.curr_rep}"
+        self.clf = self._read_txt(f"{self.sheet_folder}{self.clf}")
+        self.legend = self._read_txt(f"{self.sheet_folder}{self.legend}")
 
     def _read_txt(self, txt):
         '''
@@ -40,6 +28,64 @@ class Tools():
         with open(txt) as file:
             sn = [str(line.rstrip('\n')) for line in file]
         return sn
+
+    def _is_ip(self, ip):
+        '''
+        determine if a string is a valid IP address
+        '''
+        try:
+            ipaddress.IPv4Network(ip)
+            return True
+        except ValueError:
+            return False
+
+    def _determinte_color(self, sheet, cell):
+        '''
+        find cell color, only recognizes green, red, yellow
+        '''
+        color = sheet[cell].fill.start_color.index
+        return color
+
+    def _xlsx_to_dict(self, previous_report, sheet_name):
+        '''
+        read the previous report into a dictionary,
+        format: {IP: [(port1, color1), (port1, color1), ...]...}
+        '''
+        prev_dict = defaultdict(list)
+        sheet = load_workbook(previous_report, data_only=True)[sheet_name]
+
+        for ip, port in zip(sheet['A'], sheet['B']):
+            if self._is_ip(ip.value) == True:
+                color = self._determinte_color(sheet, ip.coordinate)
+                prev_dict[ip.value].append((port.value, color))
+
+        return prev_dict
+
+    def __repr__(self):
+        cls = self.__class__
+        cls_name = cls.__name__
+        indent = ' ' * 4
+        res = [f'{cls_name}(']
+        for f in fields(cls):
+            value = getattr(self, f.name)
+            res.append(f'{indent}{f.name} ===> '
+                       f'type: {type(value)}, entries: {len(value)},')
+        res.append(')')
+        return '\n'.join(res)
+
+
+
+class Tools():
+    def __init__(self, Reader):
+        # Reader object
+        self.reader = Reader
+        # Subnets
+        self.cf_ip_ranges = [self.subnet_range(ip) for ip in Reader.clf]
+
+        # Colors
+        self.colors = {'green': 'FF00FF00', 'red': 'FFFF0000',
+                       'yellow': 'FFFFFF00', 'orange': 'FFFF6600',
+                       'blue': 'FF00FFFF', 'gray': 'FFC0C0C0'}
     
     def _ip_to_digit(self, ip):
         '''
@@ -69,34 +115,12 @@ class Tools():
         except ValueError:
             return False
 
-    def _determinte_color(self, sheet, cell):
-        '''
-        find cell color, only recognizes green, red, yellow
-        '''
-        color = sheet[cell].fill.start_color.index
-        return color
-
-    def xlsx_to_dict(self, previous_report, sheet_name):
-        '''
-        read the previous report into a dictionary,
-        format: {IP: [(port1, color1), (port1, color1), ...]...}
-        '''
-        prev_dict = defaultdict(list)
-        sheet = load_workbook(previous_report, data_only=True)[sheet_name]
-
-        for ip, port in zip(sheet['A'], sheet['B']):
-            if self._is_ip(ip.value) == True:
-                color = self._determinte_color(sheet, ip.coordinate)
-                prev_dict[ip.value].append((port.value, color))
-
-        return prev_dict
-
     def _is_present(self, ip, port):
         '''
         determine if a key is present in a dictionary
         '''
         try:
-            for record in self.prev_dict[ip]:
+            for record in self.reader.prev_rep[ip]:
                 if record[0] == port:
                     return record
             return False
@@ -126,8 +150,8 @@ class Tools():
         '''
         read <self.crcsv> line by line and color accordingly
         '''
-        workbook = load_workbook(self.current_report, data_only=True)
-        worksheet = workbook[self.prp1_sheet]
+        workbook = load_workbook(self.reader.curr_rep, data_only=True)
+        worksheet = workbook['Pentest Report']
 
         for row in worksheet:
             ip, port = str(row[0].value), str(row[1].value)
@@ -136,10 +160,10 @@ class Tools():
                 print('not IP')
             elif self._ip_within_range(ip):
                 self._color_cells(row, self.colors['orange'])
-            elif ip not in self.ip_adrs:
+            elif ip not in self.reader.ip_adrs:
                 self._color_cells(row, self.colors['gray'])
             elif record:
                 self._color_cells(row, record[1])
             else:
                 self._color_cells(row, self.colors['blue'])
-        workbook.save(self.current_report)
+        workbook.save(self.reader.curr_rep)
