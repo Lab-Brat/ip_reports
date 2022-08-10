@@ -11,15 +11,13 @@ class Reader:
     curr_rep: str
     clf: str
     legend: str
-    sheet_folder = '/opt/tables/'
 
     def __post_init__(self):
-        self.ip_adrs = self._read_txt(f"{self.sheet_folder}{self.ip_adrs}")
-        self.previous_report = f"{self.sheet_folder}{self.prev_rep}"
-        self.prev_rep = self._xlsx_to_dict(self.previous_report, 'Pentest Report')
-        self.curr_rep = self.current_report = f"{self.sheet_folder}{self.curr_rep}"
-        self.clf = self._read_txt(f"{self.sheet_folder}{self.clf}")
-        self.legend = self._read_txt(f"{self.sheet_folder}{self.legend}")
+        self.ip_adrs = self._read_txt(self.ip_adrs)
+        self.prev_rep = self._xlsx_to_dict(self.prev_rep, 'Pentest Report')
+        self.curr_rep = self.curr_rep
+        self.clf = self._read_txt(self.clf)
+        self.legend = self._read_txt(self.legend)
 
     def _read_txt(self, txt):
         '''
@@ -156,7 +154,7 @@ class Tools():
             ip, port = str(row[0].value), str(row[1].value)
             record = self._is_present(ip, port)
             if self._is_ip(ip) == False:
-                print('not IP')
+                continue
             elif self._ip_within_range(ip, cf_ip_ranges):
                 self._color_cells(row, self.colors['orange'])
             elif ip not in self.reader.ip_adrs:
