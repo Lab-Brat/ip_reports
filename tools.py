@@ -79,8 +79,6 @@ class Tools():
     def __init__(self, Reader):
         # Reader object
         self.reader = Reader
-        # Subnets
-        self.cf_ip_ranges = [self.subnet_range(ip) for ip in Reader.clf]
 
         # Colors
         self.colors = {'green': 'FF00FF00', 'red': 'FFFF0000',
@@ -127,11 +125,11 @@ class Tools():
         except KeyError:
             return False
 
-    def _ip_within_range(self, ip):
+    def _ip_within_range(self, ip, ranges):
         '''
         determine if an IP address belongs to a subnets
         '''
-        for range in self.cf_ip_ranges:
+        for range in ranges:
             ipdig = self._ip_to_digit(ip)
             if range[0] <= ipdig <= range[1]:
                 return True
@@ -152,13 +150,14 @@ class Tools():
         '''
         workbook = load_workbook(self.reader.curr_rep, data_only=True)
         worksheet = workbook['Pentest Report']
+        cf_ip_ranges = [self.subnet_range(ip) for ip in self.reader.clf]
 
         for row in worksheet:
             ip, port = str(row[0].value), str(row[1].value)
             record = self._is_present(ip, port)
             if self._is_ip(ip) == False:
                 print('not IP')
-            elif self._ip_within_range(ip):
+            elif self._ip_within_range(ip, cf_ip_ranges):
                 self._color_cells(row, self.colors['orange'])
             elif ip not in self.reader.ip_adrs:
                 self._color_cells(row, self.colors['gray'])
